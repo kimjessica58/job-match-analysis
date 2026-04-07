@@ -1,0 +1,244 @@
+table_name,column_name,data_type,category,unique_count,unique_values_or_description
+job_postings,uuid,STRING,id_reference,,Foreign key / primary key
+job_postings,created_at,TIMESTAMP,timestamp,,Timestamp
+job_postings,updated_at,TIMESTAMP,timestamp,,Timestamp
+job_postings,key,STRING,id_reference,,Foreign key / primary key
+job_postings,added_date,TIMESTAMP,timestamp,,Timestamp
+job_postings,expiration_date,TIMESTAMP,timestamp,,Timestamp
+job_postings,slug,STRING,free_text,4998473,4998473 unique values
+job_postings,webflow_slug,STRING,free_text,4998473,4998473 unique values
+job_postings,webflow_id,STRING,id_reference,,Foreign key / primary key
+job_postings,app_link,STRING,free_text,,URL
+job_postings,top_priority,BOOL,boolean,2,TRUE | FALSE
+job_postings,expired,BOOL,boolean,2,TRUE | FALSE
+job_postings,featured,BOOL,boolean,2,TRUE | FALSE
+job_postings,weekly_hours,INT64,numeric,,Numeric (weekly_hours)
+job_postings,pay_quantity,FLOAT64,numeric,,Compensation amount
+job_postings,pay_unit,STRING,categorical,4,HOURLY | MONTHLY | WEEKLY | YEARLY
+job_postings,last_checked_at,TIMESTAMP,timestamp,,Timestamp
+job_postings,benefits_uuid,STRING,id_reference,,Foreign key / primary key
+job_postings,role_uuid,STRING,id_reference,,Foreign key / primary key
+job_postings,company_uuid,STRING,id_reference,,Foreign key / primary key
+job_postings,job_source_uuid,STRING,id_reference,,Foreign key / primary key
+job_postings,location_uuid,STRING,id_reference,,Foreign key / primary key
+job_postings,primary_photo,STRING,free_text,,Image URL
+job_postings,indexable,BOOL,boolean,2,TRUE | FALSE
+job_postings,last_expiry_checked_at,TIMESTAMP,timestamp,,Timestamp
+job_postings,last_job_indexed_at,TIMESTAMP,timestamp,,Timestamp
+job_postings,last_search_indexed_at,TIMESTAMP,timestamp,,Timestamp
+job_postings,prioritize_indexing,BOOL,boolean,2,TRUE | FALSE
+job_postings,tip_percent,FLOAT64,numeric,,Numeric (tip_percent)
+job_postings,email_template,STRING,numeric,,Latitude coordinate
+job_postings,subject_template,STRING,numeric,,Latitude coordinate
+job_postings,last_updated_at_external,TIMESTAMP,timestamp,,Timestamp
+job_postings,direct_apply,BOOL,boolean,2,TRUE | FALSE
+job_postings,needs_review,BOOL,boolean,2,TRUE | FALSE
+job_postings,created_by_user_id,STRING,id_reference,,Foreign key / primary key
+job_postings,sponsored,BOOL,boolean,2,TRUE | FALSE
+job_postings,draft,BOOL,boolean,2,TRUE | FALSE
+job_postings,summarization,STRING,empty,0,No non-null values
+job_postings,tip_quantity,FLOAT64,numeric,,Numeric (tip_quantity)
+job_postings,urgently_hiring,BOOL,boolean,2,TRUE | FALSE
+job_postings,business_team_uuid,STRING,id_reference,,Foreign key / primary key
+job_postings,max_pay_quantity,FLOAT64,numeric,,Compensation amount
+job_postings,app_email,STRING,categorical,9, | Jmartinez12@behaviorfrontiers.com | Pointlookoutdelicatessen@gmail.com | admin@thestepbystepschool.com | careers@brooklynsolarworks.com | cherese@staffingforce.com | contact@rytcarehomecare.com | sonita@perfumesoftheworldus.com | stacey@bonitabowls.co
+job_postings,app_method,STRING,categorical,3,DIRECT | EMAIL | LINK
+job_postings,job_original_id,STRING,id_reference,,Foreign key / primary key
+job_postings,calendar_event,STRING,categorical,7,"{""name"":""Daily Provisions Boston Hiring Event"",""start"":1769526000000,""end"":1769540400000,""location"":""200 Seaport Blvd, Boston, Massachusetts 02210""} | {""name"":""Hiring Event at the CareerSource Broward Central Center"",""start"":1773151200000,""end"":1773158400000,""location"":""2550 W Oakland Park Blvd, Oakland Park, Florida 33311""} | {""name"":""Hiring Event at the CareerSource Broward Central Center"",""start"":1773842400000,""end"":1773849600000,""location"":""2550 W Oakland Park Blvd, Oakland Park, Florida 33311""} | {""name"":""Hiring Event at the CareerSource Broward South Center"",""start"":1773928800000,""end"":1773936000000,""location"":""7550 Davie Road Extension, Hollywood, Florida 33024""} | {""name"":""Mercy Housing Hiring Event"",""start"":1773324000000,""end"":1773342000000,""location"":""451 Galvez Ave, San Francisco, California 94124""} | {""name"":""SFO Resource Fair"",""start"":1774359000000,""end"":1774377000000,""location"":""550 10th St, Oakland, California 94607""} | {""name"":""Spring Hiring Event"",""start"":1776956400000,""end"":1776965400000,""location"":""77-17 Queens Blvd, New York, New York 11373""}"
+job_postings,last_open_search_indexed_at,TIMESTAMP,timestamp,,Timestamp
+job_postings,removed_from_open_search_index_at,TIMESTAMP,timestamp,,Timestamp
+job_postings,education_level,STRING,categorical,7,2 Years | Associate's Degree | Bachelor's Degree | Doctorate | High School Diploma or GED | Master's Degree | No Requirements
+job_postings,experience_level,STRING,categorical,3,Entry-Level | Mid-Level | Senior-Level
+job_postings,description,STRING,free_text,,Free text description
+job_postings,hash_matches,ARRAY<STRING>,array,,Repeated/array field
+job_postings,min_exp_years,INT64,numeric,,Years of experience
+job_postings,original_role_uuid,STRING,id_reference,,Foreign key / primary key
+job_postings,qualifications,STRING,categorical,2, | CDL
+job_postings,role_name,STRING,free_text,69,69 unique values
+job_postings,pay_per_day,FLOAT64,numeric,,Compensation amount
+job_postings,pay_per_hour,FLOAT64,numeric,,Compensation amount
+job_postings,pay_per_month,FLOAT64,numeric,,Compensation amount
+job_postings,pay_per_week,FLOAT64,numeric,,Compensation amount
+job_postings,pay_per_year,FLOAT64,numeric,,Compensation amount
+job_postings,frozen_modifications,STRING,free_text,51,51 unique values
+job_postings,original_values,STRING,free_text,91,91 unique values
+job_postings,last_elasticsearch_indexed_at,TIMESTAMP,timestamp,,Timestamp
+job_postings,commission_quantity,FLOAT64,numeric,,Numeric (commission_quantity)
+job_postings,searchable,BOOL,boolean,2,TRUE | FALSE
+job_postings,terminate_sponsorship_at,TIMESTAMP,timestamp,,Timestamp
+job_postings,standard_role_uuid,STRING,id_reference,,Foreign key / primary key
+job_postings,blacklisted,BOOL,boolean,2,TRUE | FALSE
+job_postings,remote,BOOL,boolean,2,TRUE | FALSE
+job_postings,needs_elasticsearch_indexing,BOOL,boolean,2,TRUE | FALSE
+job_postings,training,BOOL,boolean,2,TRUE | FALSE
+job_postings,pay_per_hour_above_min_wage,BOOL,boolean,2,TRUE | FALSE
+job_postings,easy_apply,BOOL,boolean,2,TRUE | FALSE
+job_postings,expire_posting_at,TIMESTAMP,timestamp,,Timestamp
+job_postings,benji_box_meta_data_uuid,STRING,id_reference,,Foreign key / primary key
+job_postings,role_class_type_uuid,STRING,id_reference,,Foreign key / primary key
+job_postings,pay_needs_recalculation,BOOL,boolean,2,TRUE | FALSE
+job_postings,needs_search_validation,BOOL,boolean,2,TRUE | FALSE
+job_postings,search_validation_reason,STRING,empty,0,No non-null values
+job_postings,education_field,STRING,empty,0,No non-null values
+job_postings,last_semantic_indexed_at,TIMESTAMP,timestamp,,Timestamp
+job_postings,needs_semantic_indexing,BOOL,boolean,2,TRUE | FALSE
+job_postings,education_field_uuid,STRING,id_reference,,Foreign key / primary key
+job_postings,xml_job_uuid,STRING,id_reference,,Foreign key / primary key
+job_postings,unlisted,BOOL,boolean,2,TRUE | FALSE
+user,id,STRING,id_reference,,Foreign key / primary key
+user,name,STRING,free_text,,Name (text)
+user,email_verified,TIMESTAMP,timestamp,,Timestamp
+user,image,STRING,free_text,,Image URL
+user,phone_verified,TIMESTAMP,timestamp,,Timestamp
+user,referred_by,STRING,categorical,1,
+user,referrer_id,STRING,id_reference,,Foreign key / primary key
+user,neighborhood_uuid,STRING,id_reference,,Foreign key / primary key
+user,place_id,STRING,id_reference,,Foreign key / primary key
+user,current_pay,FLOAT64,numeric,,Compensation amount
+user,target_benefits,ARRAY<STRING>,array,,Repeated/array field
+user,target_pay,FLOAT64,numeric,,Compensation amount
+user,created_at,TIMESTAMP,timestamp,,Timestamp
+user,updated_at,TIMESTAMP,timestamp,,Timestamp
+user,subscription_default,BOOL,boolean,2,TRUE | FALSE
+user,super_admin,BOOL,boolean,2,TRUE | FALSE
+user,merged_into_user_id,STRING,id_reference,,Foreign key / primary key
+user,first_name,STRING,free_text,,Name (text)
+user,last_name,STRING,free_text,,Name (text)
+user,internal,BOOL,boolean,2,TRUE | FALSE
+user,default_resume_id,STRING,id_reference,,Foreign key / primary key
+user,state,STRING,empty,0,No non-null values
+user,image_file_uuid,STRING,id_reference,,Foreign key / primary key
+user,enrolled_in_recommendations,BOOL,boolean,2,TRUE | FALSE
+user,last_login,TIMESTAMP,timestamp,,Timestamp
+user,dma_uuid,STRING,id_reference,,Foreign key / primary key
+user,last_sendgrid_contact_synced_at,TIMESTAMP,timestamp,,Timestamp
+user_job_match_auto_apply_posting,uuid,STRING,id_reference,,Foreign key / primary key
+user_job_match_auto_apply_posting,created_at,TIMESTAMP,timestamp,,Timestamp
+user_job_match_auto_apply_posting,updated_at,TIMESTAMP,timestamp,,Timestamp
+user_job_match_auto_apply_posting,posting_uuid,STRING,id_reference,,Foreign key / primary key
+user_job_match_auto_apply_posting,xml_raw_job_uuid,STRING,id_reference,,Foreign key / primary key
+user_job_match_auto_apply_posting,canonical_app_link,STRING,free_text,,URL
+user_job_match_auto_apply_posting,tags,ARRAY<STRING>,array,,Repeated/array field
+user_job_match_auto_apply_posting,contractor_instructions,STRING,free_text,223,223 unique values
+user_job_match_auto_apply_posting,needs_verification_code,BOOL,boolean,2,TRUE | FALSE
+user_job_match_auto_apply_posting_match,uuid,STRING,id_reference,,Foreign key / primary key
+user_job_match_auto_apply_posting_match,created_at,TIMESTAMP,timestamp,,Timestamp
+user_job_match_auto_apply_posting_match,updated_at,TIMESTAMP,timestamp,,Timestamp
+user_job_match_auto_apply_posting_match,auto_apply_posting_uuid,STRING,id_reference,,Foreign key / primary key
+user_job_match_auto_apply_posting_match,user_job_match_settings_uuid,STRING,id_reference,,Foreign key / primary key
+user_job_match_auto_apply_posting_match,status,STRING,categorical,8,ACCOUNT_EXISTS | APPLIED | APP_FAILED | CONTRACTOR_PENDING | JOB_EXPIRED | USER_APPROVED | USER_PENDING | USER_REJECTED
+user_job_match_auto_apply_posting_match,assignedUserId,STRING,categorical,40,cm1i28uja0065x3s03l55ggzg | cm7p9htdz000011uclb39ff0m | cmay1rxs7000012fsiceutey7 | cmbfa1qyp00061kkiiikdpk86 | cmdqgf1ml0171j4fu25x3ytw5 | cmdxkmnhx00y3ns0matanc1eo | cmek8idkb0782ia0m9g8zh223 | cmeps6tas0004b914ra97zugf | cmevoa3f302vdjo0mj7ursiuu | cmf02kxx300wzk10nz8ur30lq | cmf03hi5o00yemq0mbo7tl93h | cmf1vukum02woj70n232bc745 | cmf1zw9ut038kmq0m7b7350ww | cmfe5l39p0058ij0nphrsfp8x | cmfmo0vzk000274162xkkjgja | cmfna163k014pog0nndssgsko | cmfo4cd5m00007117z79vb6s1 | cmfo4t7px02qoke0lsd9cpvq5 | cmfuzqzju02tpj60m1yy9qr37 | cmfwxl4kh00cgj10lt41myvzl | cmfxyfjpf00x8kx0pklw48lis | cmfyhmswb0003fr0m9kbepph5 | cmg4b1rx304g1kd0nluq0yqda | cmgi6b7yx01txjx0lg0bvth01 | cmgib3wcm03v1k10lobfzfhps | cmgmx5hy102qnfq0mg4tstypb | cmhaw2nr500flmf0myya9sb7s | cmhz42zim06b1hu0n4cylyjne | cmkcxhrrb015pqd0gxn4e1gfp | cmkkiwo8w00kpj50i2y7sd2oc | cmko3onih01hzip0h9vxvcy8x | cml5ubflz07wugy0ihyqk1rhx | cml88gd1e00e9jl0jthdus14q | cml8a6mtn0a9cjk0g0jhqiag8 | cmlhcc3nr00uxjn0gytpmh5te | cmlhhzxrs04l0k30ilppf7fse | cmm2w9os000mdkz0ieyarn514 | cmm33qgtc04s0o90itbxbyre2 | kimjessica58@gmail.com | mark@bandana.com
+user_job_match_auto_apply_posting_match,cpa,FLOAT64,numeric,,Cost per application
+user_job_match_auto_apply_posting_match,contractornotes,STRING,free_text,,Free text (contractornotes)
+user_job_match_auto_apply_posting_match,ipAddressUuid,STRING,free_text,15732,15732 unique values
+user_job_match_auto_apply_posting_match,applied_at,TIMESTAMP,timestamp,,Timestamp
+user_job_match_auto_apply_posting_match,job_posting_application_uuid,STRING,id_reference,,Foreign key / primary key
+user_job_match_auto_apply_posting_match,creator_id,STRING,id_reference,,Foreign key / primary key
+user_job_match_auto_apply_posting_match,user_approved_at,TIMESTAMP,timestamp,,Timestamp
+user_job_match_auto_apply_posting_match,user_rejected_at,TIMESTAMP,timestamp,,Timestamp
+user_job_match_auto_apply_posting_match,hidden,BOOL,boolean,2,TRUE | FALSE
+user_job_match_auto_apply_posting_match,hide_match_at,TIMESTAMP,timestamp,,Timestamp
+user_job_match_auto_apply_posting_match,match_generation_version,STRING,categorical,3,instant | v1 | v2
+user_job_match_settings,uuid,STRING,id_reference,,Foreign key / primary key
+user_job_match_settings,user_id,STRING,id_reference,,Foreign key / primary key
+user_job_match_settings,created_at,TIMESTAMP,timestamp,,Timestamp
+user_job_match_settings,updated_at,TIMESTAMP,timestamp,,Timestamp
+user_job_match_settings,status,STRING,categorical,7,ACTIVE | DRAFT | EMAIL_ONLY | INTERESTED | LATER | PAUSED | PENDING
+user_job_match_settings,over_eighteen,BOOL,boolean,2,TRUE | FALSE
+user_job_match_settings,resume_link,STRING,free_text,,URL
+user_job_match_settings,minimum_pay,FLOAT64,numeric,,Compensation amount
+user_job_match_settings,target_roles,ARRAY<STRING>,array,,Repeated/array field
+user_job_match_settings,target_boroughs,ARRAY<STRING>,array,,Repeated/array field
+user_job_match_settings,target_job_type,STRING,free_text,1484,1484 unique values
+user_job_match_settings,target_benefits,ARRAY<STRING>,array,,Repeated/array field
+user_job_match_settings,user_subscription_uuid,STRING,id_reference,,Foreign key / primary key
+user_job_match_settings,assigned_user_id,STRING,id_reference,,Foreign key / primary key
+user_job_match_settings,internal_notes,STRING,free_text,,Free text (internal_notes)
+user_job_match_settings,is_disabled,STRING,categorical,3,DECLINE | NO | YES
+user_job_match_settings,is_veteran,STRING,categorical,3,DECLINE | NO | YES
+user_job_match_settings,needs_sponsorship,STRING,categorical,2,NO | YES
+user_job_match_settings,open_to_any_city,BOOL,boolean,2,TRUE | FALSE
+user_job_match_settings,open_to_hybrid,BOOL,boolean,2,TRUE | FALSE
+user_job_match_settings,open_to_remote,BOOL,boolean,2,TRUE | FALSE
+user_job_match_settings,race,STRING,categorical,11, | American Indian or Alaska Native (not Hispanic or Latino) | Asian (Not Hispanic or Latino) | Asian (not Hispanic or Latino) | Black or African American (Not Hispanic or Latino) | Black or African American (not Hispanic or Latino) | Hispanic or Latino | Native Hawaiian or Other Pacific Islander (not Hispanic or Latino) | Rather Not Disclosed | Two or more races (not Hispanic or Latino) | White (not Hispanic or Latino)
+user_job_match_settings,able_to_drive,BOOL,boolean,2,TRUE | FALSE
+user_job_match_settings,education_field,STRING,categorical,2,Film & TV | Humanities and Social Science
+user_job_match_settings,education_gpa,STRING,empty,0,No non-null values
+user_job_match_settings,education_level,STRING,categorical,9,Associate's | Associate's Degree | Bachelor's | Bachelor's Degree | Doctorate | High School Diploma or GED | High school / GED | Master's Degree | No Requirements
+user_job_match_settings,gender,STRING,categorical,3, | Female | Male
+user_job_match_settings,sms_enabled,BOOL,boolean,2,TRUE | FALSE
+user_job_match_settings,strategy,STRING,categorical,4,BALANCED | OPEN | PAY | STRICT
+user_job_match_settings,raw_notion_locations,ARRAY<STRING>,array,,Repeated/array field
+user_job_match_settings,contractor_status,STRING,categorical,2,CONTRACTOR_COMPLETE | NEEDS_CONTRACTOR
+user_job_match_settings,experience_level,STRING,categorical,3,Entry-Level | Mid-Level | Senior-Level
+user_job_match_settings,last_job_match_activity_at,TIMESTAMP,timestamp,,Timestamp
+user_job_match_settings,sendblue_activity_status,STRING,categorical,4,ACTIVE_FOLLOWUP | INACTIVE | INACTIVITY_REMINDER | INTRO_PENDING
+user_job_match_settings,follow_up_sent_at,TIMESTAMP,timestamp,,Timestamp
+user_job_match_settings,sendblue_follow_up_started_at,TIMESTAMP,timestamp,,Timestamp
+user_job_match_settings,follow_up_template,INT64,numeric,,Latitude coordinate
+user_job_match_settings,enrolled_in_sendblue,BOOL,boolean,2,TRUE | FALSE
+user_job_match_settings,target_locations,"ARRAY<STRUCT<neighborhood STRING, street STRING, zipcode STRING, state STRING, lat FLOAT64, long FLOAT64, city STRING, uuid STRING, country STRING>>",array,,Repeated/array field
+user_job_match_settings,target_industries,"ARRAY<STRUCT<name STRING, uuid STRING>>",array,,Repeated/array field
+user_job_match_settings,target_transit_lines,"ARRAY<STRUCT<name STRING, uuid STRING>>",array,,Repeated/array field
+user_job_match_settings,target_neighborhoods,"ARRAY<STRUCT<name STRING, city STRING, uuid STRING>>",array,,Repeated/array field
+user_job_match_settings,target_certifications,"ARRAY<STRUCT<name STRING, uuid STRING>>",array,,Repeated/array field
+user_job_match_settings,target_roles_ref,"ARRAY<STRUCT<alias STRING, uuid STRING>>",array,,Repeated/array field
+user_job_match_settings,target_role_class,"ARRAY<STRUCT<major_group STRING, minor_group STRING, broad_group STRING, uuid STRING>>",array,,Repeated/array field
+user_job_match_settings,target_education_fields,"ARRAY<STRUCT<name STRING, jms_uuid STRING, education_level STRING>>",array,,Repeated/array field
+xml_job_feed_raw_jobs,uuid,STRING,id_reference,,Foreign key / primary key
+xml_job_feed_raw_jobs,created_at,TIMESTAMP,timestamp,,Timestamp
+xml_job_feed_raw_jobs,updated_at,TIMESTAMP,timestamp,,Timestamp
+xml_job_feed_raw_jobs,xml_job_feed_uuid,STRING,id_reference,,Foreign key / primary key
+xml_job_feed_raw_jobs,job_id,STRING,id_reference,,Foreign key / primary key
+xml_job_feed_raw_jobs,role_name,STRING,free_text,2060118,2060118 unique values
+xml_job_feed_raw_jobs,company_name,STRING,free_text,22988,22988 unique values
+xml_job_feed_raw_jobs,app_link,STRING,free_text,,URL
+xml_job_feed_raw_jobs,last_run_id,STRING,id_reference,,Foreign key / primary key
+xml_job_feed_raw_jobs,cpc,FLOAT64,numeric,,Numeric (cpc)
+xml_job_feed_raw_jobs,cpa,FLOAT64,numeric,,Cost per application
+xml_job_feed_raw_jobs,location,STRING,free_text,69259,69259 unique values
+xml_job_feed_raw_jobs,streetaddress,STRING,categorical,4, | 1133 6th Ave | 151 W 42nd Street | 64 Serramonte Center
+xml_job_feed_raw_jobs,city,STRING,free_text,21232,21232 unique values
+xml_job_feed_raw_jobs,state,STRING,free_text,166,166 unique values
+xml_job_feed_raw_jobs,country,STRING,numeric,,Count/total
+xml_job_feed_raw_jobs,zipcode,STRING,free_text,33930,33930 unique values
+xml_job_feed_raw_jobs,latitude,FLOAT64,numeric,,Latitude coordinate
+xml_job_feed_raw_jobs,longitude,FLOAT64,numeric,,Longitude coordinate
+xml_job_feed_raw_jobs,posted_date,TIMESTAMP,timestamp,,Timestamp
+xml_job_feed_raw_jobs,expiration_date,TIMESTAMP,timestamp,,Timestamp
+xml_job_feed_raw_jobs,description,STRING,free_text,,Free text description
+xml_job_feed_raw_jobs,pay,STRING,free_text,26481,26481 unique values
+xml_job_feed_raw_jobs,pay_max,STRING,numeric,,Compensation amount
+xml_job_feed_raw_jobs,pay_min,STRING,numeric,,Compensation amount
+xml_job_feed_raw_jobs,pay_unit,STRING,empty,0,No non-null values
+xml_job_feed_raw_jobs,pay_type,STRING,empty,0,No non-null values
+xml_job_feed_raw_jobs,experience,STRING,categorical,9, | 0 | 0-1 Year | 1-2 Years | 2-3 Years | 3-5 Years | 5-7 Years | 7-10 Years | None
+xml_job_feed_raw_jobs,education,STRING,categorical,1,
+xml_job_feed_raw_jobs,job_type,STRING,free_text,200,200 unique values
+xml_job_feed_raw_jobs,organization_id,STRING,id_reference,,Foreign key / primary key
+xml_job_feed_raw_jobs,company_id,STRING,id_reference,,Foreign key / primary key
+xml_job_feed_raw_jobs,category,STRING,free_text,8480,8480 unique values
+xml_job_feed_raw_jobs,category_id,STRING,id_reference,,Foreign key / primary key
+xml_job_feed_raw_jobs,logo,STRING,free_text,,Image URL
+xml_job_feed_raw_jobs,mobile_friendly,BOOL,boolean,2,TRUE | FALSE
+xml_job_feed_raw_jobs,html_jobs,STRING,free_text,,Markup content
+xml_job_feed_raw_jobs,segment_name,STRING,free_text,718,718 unique values
+xml_job_feed_raw_jobs,tenant_id,STRING,id_reference,,Foreign key / primary key
+xml_job_feed_raw_jobs,requirement,STRING,free_text,540,540 unique values
+xml_job_feed_raw_jobs,feed_expired,STRING,timestamp,,Timestamp
+xml_job_feed_raw_jobs,extra_data,STRING,free_text,7645,7645 unique values
+xml_job_feed_raw_jobs,expired,BOOL,boolean,2,TRUE | FALSE
+xml_job_feed_raw_jobs,status,STRING,categorical,1,active
+xml_job_feed_raw_jobs,upsert_status,STRING,empty,0,No non-null values
+xml_job_feed_raw_jobs,branded_link_uuid,STRING,id_reference,,Foreign key / primary key
+xml_job_feed_raw_jobs,should_prioritize,BOOL,boolean,2,TRUE | FALSE
+xml_job_feed_raw_jobs,xml_source_url,STRING,free_text,,URL
+xml_job_feed_raw_jobs,needs_verification_step,BOOL,boolean,2,TRUE | FALSE
+xml_job_feed_raw_jobs,airtable_base_id,STRING,id_reference,,Foreign key / primary key
+xml_job_feed_raw_jobs,airtable_record_id,STRING,id_reference,,Foreign key / primary key
+xml_job_feed_raw_jobs,airtable_table_id,STRING,id_reference,,Foreign key / primary key
+xml_job_feed_raw_jobs,job_posting_uuid,STRING,id_reference,,Foreign key / primary key
+xml_job_feed_raw_jobs,monitor_for_notification,BOOL,boolean,2,TRUE | FALSE
+xml_job_feed_raw_jobs,additional_clicks_max,INT64,numeric,,Numeric (additional_clicks_max)
+xml_job_feed_raw_jobs,additional_clicks_min,INT64,numeric,,Numeric (additional_clicks_min)
+xml_job_feed_raw_jobs,additional_clicks_mode,STRING,categorical,1,replace

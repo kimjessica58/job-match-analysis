@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.DS_Store
+.claude/
+.env
+.env.local
+credentials/
+*.json
+!reference/*.json
