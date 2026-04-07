@@ -956,19 +956,19 @@ def build_table_styler(
         )
     for column in percent_columns or []:
         if column in df.columns:
-            styler = styler.applymap(percent_background_style, subset=[column])
+            styler = styler.map(percent_background_style, subset=[column])
     for column in delta_columns or []:
         if column in df.columns:
-            styler = styler.applymap(delta_background_style, subset=[column])
+            styler = styler.map(delta_background_style, subset=[column])
     for column in stage_columns or []:
         if column in df.columns:
-            styler = styler.applymap(gap_stage_style, subset=[column])
+            styler = styler.map(gap_stage_style, subset=[column])
     for column in emphasis_columns or []:
         if column in df.columns:
-            styler = styler.applymap(emphasis_style, subset=[column])
+            styler = styler.map(emphasis_style, subset=[column])
     for column, style_fn in (custom_style_columns or {}).items():
         if column in df.columns:
-            styler = styler.applymap(style_fn, subset=[column])
+            styler = styler.map(style_fn, subset=[column])
     return styler
 
 
