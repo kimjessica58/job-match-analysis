@@ -100,6 +100,12 @@ CLAUDE_MD_PATH = os.path.join(os.path.dirname(__file__), "reference", "claude.md
 
 # Anthropic API key for Query Lab
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+if not ANTHROPIC_API_KEY:
+    try:
+        import streamlit as st
+        ANTHROPIC_API_KEY = st.secrets.get("ANTHROPIC_API_KEY", "")
+    except Exception:
+        pass
 
 # Dashboard defaults
 CACHE_TTL = 3600  # 1 hour

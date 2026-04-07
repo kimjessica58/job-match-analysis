@@ -185,18 +185,32 @@ def _resolve_match_window(start_date=None, end_date=None, days=None):
 
 
 def get_client():
-    """Create an authenticated BigQuery client using a service account key."""
+    """Create an authenticated BigQuery client.
+
+    Uses local service account JSON file if available, otherwise falls back
+    to Streamlit Community Cloud secrets (st.secrets["gcp_service_account"]).
+    """
     creds_path = config.CREDENTIALS_PATH
-    if not os.path.exists(creds_path):
-        raise FileNotFoundError(
-            f"Service account key not found at '{creds_path}'. "
-            "Download it from GCP Console > IAM & Admin > Service Accounts "
-            "and place it at credentials/service-account.json"
+    if os.path.exists(creds_path):
+        credentials = service_account.Credentials.from_service_account_file(
+            creds_path,
+            scopes=["https://www.googleapis.com/auth/bigquery"],
         )
-    credentials = service_account.Credentials.from_service_account_file(
-        creds_path,
-        scopes=["https://www.googleapis.com/auth/bigquery"],
-    )
+    else:
+        try:
+            import streamlit as st
+            creds_info = dict(st.secrets["gcp_service_account"])
+            credentials = service_account.Credentials.from_service_account_info(
+                creds_info,
+                scopes=["https://www.googleapis.com/auth/bigquery"],
+            )
+        except Exception:
+            raise FileNotFoundError(
+                f"Service account key not found at '{creds_path}' and no "
+                "Streamlit secrets configured. Either place your key at "
+                "credentials/service-account.json or add gcp_service_account "
+                "to Streamlit secrets."
+            )
     return bigquery.Client(project=config.PROJECT_ID, credentials=credentials)
 
 
