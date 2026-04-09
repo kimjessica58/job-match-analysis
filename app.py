@@ -3022,6 +3022,15 @@ def render_role_industry():
     cov_c2.metric("With Industry Selected", f"{has_industry:,}")
     cov_c3.metric("No Industry Selected", f"{no_industry:,} ({no_pct:.1f}%)")
 
+    has_pay = int(cov_filtered["has_minimum_pay"].sum())
+    no_pay = total_active - has_pay
+    no_pay_pct = (no_pay / total_active * 100) if total_active > 0 else 0
+
+    pay_c1, pay_c2, pay_c3 = st.columns(3)
+    pay_c1.metric("Total Active Users", f"{total_active:,}")
+    pay_c2.metric("With Minimum Pay Set", f"{has_pay:,}")
+    pay_c3.metric("No Minimum Pay Set", f"{no_pay:,} ({no_pay_pct:.1f}%)")
+
     st.caption("Each row is one user-industry pair. Users selecting multiple industries appear once per industry.")
 
     try:

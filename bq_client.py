@@ -1159,7 +1159,8 @@ def get_industry_coverage_with_dates(start_date=None, end_date=None):
     SELECT
         user_id,
         created_at AS settings_created_at,
-        CASE WHEN ARRAY_LENGTH(target_industries) > 0 THEN TRUE ELSE FALSE END AS has_industry
+        CASE WHEN ARRAY_LENGTH(target_industries) > 0 THEN TRUE ELSE FALSE END AS has_industry,
+        CASE WHEN minimum_pay IS NOT NULL AND minimum_pay > 0 THEN TRUE ELSE FALSE END AS has_minimum_pay
     FROM latest_active_settings
     """
     return run_query(sql)
