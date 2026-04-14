@@ -901,11 +901,13 @@ def get_remote_preference_stats(start_date=None, end_date=None):
     return run_query(sql)
 
 
-def get_location_preference_coverage_audit():
-    """Audit how current active match users express location preferences."""
+def get_location_preference_coverage_audit(start_date=None, end_date=None):
+    """Audit how current active match users express location preferences and XML coverage."""
+    settings_full = get_full_table("user_job_match_settings")
     sql = f"""
     WITH {_latest_settings_snapshot_cte()},
     {_latest_active_settings_cte()},
+    {_filtered_xml_matches_cte(start_date=start_date, end_date=end_date)},
     location_flags AS (
         SELECT
             s.user_id,
@@ -932,134 +934,218 @@ def get_location_preference_coverage_audit():
             COALESCE(ARRAY_LENGTH(s.target_boroughs), 0) > 0 AS has_target_boroughs,
             COALESCE(ARRAY_LENGTH(s.raw_notion_locations), 0) > 0 AS has_raw_notion_locations
         FROM latest_active_settings s
+    ),
+    xml_match_users AS (
+        SELECT
+            s.user_id,
+            COUNT(*) > 0 AS has_xml_match,
+            COUNTIF(IFNULL(m.match_generation_version, '') IN ('v1', 'v2')) > 0 AS has_cron_xml_match
+        FROM xml_matches m
+        JOIN `{settings_full}` s
+          ON m.user_job_match_settings_uuid = s.uuid
+        WHERE s.user_id IS NOT NULL
+        GROUP BY s.user_id
+    ),
+    audit_base AS (
+        SELECT
+            lf.*,
+            COALESCE(x.has_xml_match, FALSE) AS has_xml_match,
+            COALESCE(x.has_cron_xml_match, FALSE) AS has_cron_xml_match
+        FROM location_flags lf
+        LEFT JOIN xml_match_users x
+          ON lf.user_id = x.user_id
     )
     SELECT
         1 AS sort_order,
         'No City Listed, But State Listed' AS segment,
         COUNTIF(NOT has_city_listed AND has_state_listed) AS users,
         COUNT(*) AS active_match_users,
-        SAFE_DIVIDE(COUNTIF(NOT has_city_listed AND has_state_listed), COUNT(*)) AS share_of_active_users
-    FROM location_flags
+        SAFE_DIVIDE(COUNTIF(NOT has_city_listed AND has_state_listed), COUNT(*)) AS share_of_active_users,
+        COUNTIF(NOT has_city_listed AND has_state_listed AND has_xml_match) AS users_with_xml_match,
+        SAFE_DIVIDE(COUNTIF(NOT has_city_listed AND has_state_listed AND has_xml_match), COUNTIF(NOT has_city_listed AND has_state_listed)) AS xml_match_coverage_rate,
+        COUNTIF(NOT has_city_listed AND has_state_listed AND has_cron_xml_match) AS users_with_cron_xml_match,
+        SAFE_DIVIDE(COUNTIF(NOT has_city_listed AND has_state_listed AND has_cron_xml_match), COUNTIF(NOT has_city_listed AND has_state_listed)) AS cron_xml_match_coverage_rate
+    FROM audit_base
     UNION ALL
     SELECT
         2,
         'Has State-Only Target Location Entry',
         COUNTIF(has_state_without_city_entry),
         COUNT(*),
-        SAFE_DIVIDE(COUNTIF(has_state_without_city_entry), COUNT(*))
-    FROM location_flags
+        SAFE_DIVIDE(COUNTIF(has_state_without_city_entry), COUNT(*)),
+        COUNTIF(has_state_without_city_entry AND has_xml_match),
+        SAFE_DIVIDE(COUNTIF(has_state_without_city_entry AND has_xml_match), COUNTIF(has_state_without_city_entry)),
+        COUNTIF(has_state_without_city_entry AND has_cron_xml_match),
+        SAFE_DIVIDE(COUNTIF(has_state_without_city_entry AND has_cron_xml_match), COUNTIF(has_state_without_city_entry))
+    FROM audit_base
     UNION ALL
     SELECT
         3,
         'Open to Any City',
         COUNTIF(open_to_any_city),
         COUNT(*),
-        SAFE_DIVIDE(COUNTIF(open_to_any_city), COUNT(*))
-    FROM location_flags
+        SAFE_DIVIDE(COUNTIF(open_to_any_city), COUNT(*)),
+        COUNTIF(open_to_any_city AND has_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_any_city AND has_xml_match), COUNTIF(open_to_any_city)),
+        COUNTIF(open_to_any_city AND has_cron_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_any_city AND has_cron_xml_match), COUNTIF(open_to_any_city))
+    FROM audit_base
     UNION ALL
     SELECT
         4,
         'Open to Any City + No Listed City',
         COUNTIF(open_to_any_city AND NOT has_city_listed),
         COUNT(*),
-        SAFE_DIVIDE(COUNTIF(open_to_any_city AND NOT has_city_listed), COUNT(*))
-    FROM location_flags
+        SAFE_DIVIDE(COUNTIF(open_to_any_city AND NOT has_city_listed), COUNT(*)),
+        COUNTIF(open_to_any_city AND NOT has_city_listed AND has_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_any_city AND NOT has_city_listed AND has_xml_match), COUNTIF(open_to_any_city AND NOT has_city_listed)),
+        COUNTIF(open_to_any_city AND NOT has_city_listed AND has_cron_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_any_city AND NOT has_city_listed AND has_cron_xml_match), COUNTIF(open_to_any_city AND NOT has_city_listed))
+    FROM audit_base
     UNION ALL
     SELECT
         5,
         'Open to Any City + Listed City',
         COUNTIF(open_to_any_city AND has_city_listed),
         COUNT(*),
-        SAFE_DIVIDE(COUNTIF(open_to_any_city AND has_city_listed), COUNT(*))
-    FROM location_flags
+        SAFE_DIVIDE(COUNTIF(open_to_any_city AND has_city_listed), COUNT(*)),
+        COUNTIF(open_to_any_city AND has_city_listed AND has_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_any_city AND has_city_listed AND has_xml_match), COUNTIF(open_to_any_city AND has_city_listed)),
+        COUNTIF(open_to_any_city AND has_city_listed AND has_cron_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_any_city AND has_city_listed AND has_cron_xml_match), COUNTIF(open_to_any_city AND has_city_listed))
+    FROM audit_base
     UNION ALL
     SELECT
         6,
         'Open to Remote',
         COUNTIF(open_to_remote),
         COUNT(*),
-        SAFE_DIVIDE(COUNTIF(open_to_remote), COUNT(*))
-    FROM location_flags
+        SAFE_DIVIDE(COUNTIF(open_to_remote), COUNT(*)),
+        COUNTIF(open_to_remote AND has_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_remote AND has_xml_match), COUNTIF(open_to_remote)),
+        COUNTIF(open_to_remote AND has_cron_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_remote AND has_cron_xml_match), COUNTIF(open_to_remote))
+    FROM audit_base
     UNION ALL
     SELECT
         7,
         'Open to Remote + No Listed City',
         COUNTIF(open_to_remote AND NOT has_city_listed),
         COUNT(*),
-        SAFE_DIVIDE(COUNTIF(open_to_remote AND NOT has_city_listed), COUNT(*))
-    FROM location_flags
+        SAFE_DIVIDE(COUNTIF(open_to_remote AND NOT has_city_listed), COUNT(*)),
+        COUNTIF(open_to_remote AND NOT has_city_listed AND has_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_remote AND NOT has_city_listed AND has_xml_match), COUNTIF(open_to_remote AND NOT has_city_listed)),
+        COUNTIF(open_to_remote AND NOT has_city_listed AND has_cron_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_remote AND NOT has_city_listed AND has_cron_xml_match), COUNTIF(open_to_remote AND NOT has_city_listed))
+    FROM audit_base
     UNION ALL
     SELECT
         8,
         'Open to Remote + Listed City',
         COUNTIF(open_to_remote AND has_city_listed),
         COUNT(*),
-        SAFE_DIVIDE(COUNTIF(open_to_remote AND has_city_listed), COUNT(*))
-    FROM location_flags
+        SAFE_DIVIDE(COUNTIF(open_to_remote AND has_city_listed), COUNT(*)),
+        COUNTIF(open_to_remote AND has_city_listed AND has_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_remote AND has_city_listed AND has_xml_match), COUNTIF(open_to_remote AND has_city_listed)),
+        COUNTIF(open_to_remote AND has_city_listed AND has_cron_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_remote AND has_city_listed AND has_cron_xml_match), COUNTIF(open_to_remote AND has_city_listed))
+    FROM audit_base
     UNION ALL
     SELECT
         9,
         'Open to Hybrid',
         COUNTIF(open_to_hybrid),
         COUNT(*),
-        SAFE_DIVIDE(COUNTIF(open_to_hybrid), COUNT(*))
-    FROM location_flags
+        SAFE_DIVIDE(COUNTIF(open_to_hybrid), COUNT(*)),
+        COUNTIF(open_to_hybrid AND has_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_hybrid AND has_xml_match), COUNTIF(open_to_hybrid)),
+        COUNTIF(open_to_hybrid AND has_cron_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_hybrid AND has_cron_xml_match), COUNTIF(open_to_hybrid))
+    FROM audit_base
     UNION ALL
     SELECT
         10,
         'Open to Hybrid + No Listed City',
         COUNTIF(open_to_hybrid AND NOT has_city_listed),
         COUNT(*),
-        SAFE_DIVIDE(COUNTIF(open_to_hybrid AND NOT has_city_listed), COUNT(*))
-    FROM location_flags
+        SAFE_DIVIDE(COUNTIF(open_to_hybrid AND NOT has_city_listed), COUNT(*)),
+        COUNTIF(open_to_hybrid AND NOT has_city_listed AND has_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_hybrid AND NOT has_city_listed AND has_xml_match), COUNTIF(open_to_hybrid AND NOT has_city_listed)),
+        COUNTIF(open_to_hybrid AND NOT has_city_listed AND has_cron_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_hybrid AND NOT has_city_listed AND has_cron_xml_match), COUNTIF(open_to_hybrid AND NOT has_city_listed))
+    FROM audit_base
     UNION ALL
     SELECT
         11,
         'No Listed City + Not Any City + Not Remote',
         COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote),
         COUNT(*),
-        SAFE_DIVIDE(COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote), COUNT(*))
-    FROM location_flags
+        SAFE_DIVIDE(COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote), COUNT(*)),
+        COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote AND has_xml_match),
+        SAFE_DIVIDE(COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote AND has_xml_match), COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote)),
+        COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote AND has_cron_xml_match),
+        SAFE_DIVIDE(COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote AND has_cron_xml_match), COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote))
+    FROM audit_base
     UNION ALL
     SELECT
         12,
         'No Target Locations Listed',
         COUNTIF(NOT has_target_locations),
         COUNT(*),
-        SAFE_DIVIDE(COUNTIF(NOT has_target_locations), COUNT(*))
-    FROM location_flags
+        SAFE_DIVIDE(COUNTIF(NOT has_target_locations), COUNT(*)),
+        COUNTIF(NOT has_target_locations AND has_xml_match),
+        SAFE_DIVIDE(COUNTIF(NOT has_target_locations AND has_xml_match), COUNTIF(NOT has_target_locations)),
+        COUNTIF(NOT has_target_locations AND has_cron_xml_match),
+        SAFE_DIVIDE(COUNTIF(NOT has_target_locations AND has_cron_xml_match), COUNTIF(NOT has_target_locations))
+    FROM audit_base
     UNION ALL
     SELECT
         13,
         'No Target Locations + Not Any City + Not Remote',
         COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote),
         COUNT(*),
-        SAFE_DIVIDE(COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote), COUNT(*))
-    FROM location_flags
+        SAFE_DIVIDE(COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote), COUNT(*)),
+        COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote AND has_xml_match),
+        SAFE_DIVIDE(COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote AND has_xml_match), COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote)),
+        COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote AND has_cron_xml_match),
+        SAFE_DIVIDE(COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote AND has_cron_xml_match), COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote))
+    FROM audit_base
     UNION ALL
     SELECT
         14,
         'Target Boroughs + No Listed City',
         COUNTIF(has_target_boroughs AND NOT has_city_listed),
         COUNT(*),
-        SAFE_DIVIDE(COUNTIF(has_target_boroughs AND NOT has_city_listed), COUNT(*))
-    FROM location_flags
+        SAFE_DIVIDE(COUNTIF(has_target_boroughs AND NOT has_city_listed), COUNT(*)),
+        COUNTIF(has_target_boroughs AND NOT has_city_listed AND has_xml_match),
+        SAFE_DIVIDE(COUNTIF(has_target_boroughs AND NOT has_city_listed AND has_xml_match), COUNTIF(has_target_boroughs AND NOT has_city_listed)),
+        COUNTIF(has_target_boroughs AND NOT has_city_listed AND has_cron_xml_match),
+        SAFE_DIVIDE(COUNTIF(has_target_boroughs AND NOT has_city_listed AND has_cron_xml_match), COUNTIF(has_target_boroughs AND NOT has_city_listed))
+    FROM audit_base
     UNION ALL
     SELECT
         15,
         'Raw Notion Locations + No Listed City',
         COUNTIF(has_raw_notion_locations AND NOT has_city_listed),
         COUNT(*),
-        SAFE_DIVIDE(COUNTIF(has_raw_notion_locations AND NOT has_city_listed), COUNT(*))
-    FROM location_flags
+        SAFE_DIVIDE(COUNTIF(has_raw_notion_locations AND NOT has_city_listed), COUNT(*)),
+        COUNTIF(has_raw_notion_locations AND NOT has_city_listed AND has_xml_match),
+        SAFE_DIVIDE(COUNTIF(has_raw_notion_locations AND NOT has_city_listed AND has_xml_match), COUNTIF(has_raw_notion_locations AND NOT has_city_listed)),
+        COUNTIF(has_raw_notion_locations AND NOT has_city_listed AND has_cron_xml_match),
+        SAFE_DIVIDE(COUNTIF(has_raw_notion_locations AND NOT has_city_listed AND has_cron_xml_match), COUNTIF(has_raw_notion_locations AND NOT has_city_listed))
+    FROM audit_base
     UNION ALL
     SELECT
         16,
         'Has Listed City',
         COUNTIF(has_city_listed),
         COUNT(*),
-        SAFE_DIVIDE(COUNTIF(has_city_listed), COUNT(*))
-    FROM location_flags
+        SAFE_DIVIDE(COUNTIF(has_city_listed), COUNT(*)),
+        COUNTIF(has_city_listed AND has_xml_match),
+        SAFE_DIVIDE(COUNTIF(has_city_listed AND has_xml_match), COUNTIF(has_city_listed)),
+        COUNTIF(has_city_listed AND has_cron_xml_match),
+        SAFE_DIVIDE(COUNTIF(has_city_listed AND has_cron_xml_match), COUNTIF(has_city_listed))
+    FROM audit_base
     ORDER BY sort_order
     """
     return run_query(sql)

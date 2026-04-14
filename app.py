@@ -2327,7 +2327,10 @@ def render_location():
             "<code>open_to_any_city</code>, <code>open_to_remote</code>, <code>open_to_hybrid</code>, "
             "<code>target_boroughs</code>, and <code>raw_notion_locations</code> from the latest active match-user "
             "snapshot per <code>user_id</code>. Every metric is deduped at the user level and uses the full current "
-            "active match-user base as the denominator. This section does not use the match created_at window.",
+            "active match-user base as the denominator. The XML coverage columns use "
+            "<code>user_job_match_auto_apply_posting_match.created_at</code> filtered through the XML join path "
+            "(<code>user_job_match_auto_apply_posting.xml_raw_job_uuid</code> or <code>job_postings.xml_job_uuid</code>). "
+            "Generated-from-cron XML coverage is derived from <code>match_generation_version IN ('v1', 'v2')</code>.",
         ),
         (
             "Top Target Locations",
@@ -2359,8 +2362,8 @@ def render_location():
         return bq_client.get_remote_preference_stats(start_date, end_date)
 
     @st.cache_data(ttl=config.CACHE_TTL)
-    def _location_pref_audit():
-        return bq_client.get_location_preference_coverage_audit()
+    def _location_pref_audit(start_date, end_date):
+        return bq_client.get_location_preference_coverage_audit(start_date=start_date, end_date=end_date)
 
     @st.cache_data(ttl=config.CACHE_TTL)
     def _location_perf(start_date, end_date, match_source):
@@ -2389,7 +2392,7 @@ def render_location():
 
     try:
         remote_df = _remote(start_date, end_date)
-        audit_df = _location_pref_audit()
+        audit_df = _location_pref_audit(start_date, end_date)
         location_df = _location_perf(start_date, end_date, match_source)
         combo_df = _location_role_perf(start_date, end_date, match_source)
         comparison_location_df = _location_perf(compare_start, compare_end, match_source) if location_filters["compare_enabled"] else None
@@ -2445,6 +2448,12 @@ def render_location():
         "`No City Listed, But State Listed` means the user has no target city anywhere in `target_locations`, "
         "but does have at least one target state."
     )
+    st.caption(
+        f"XML coverage columns below use XML matches with `user_job_match_auto_apply_posting_match.created_at` "
+        f"between `{start_date}` and `{end_date}`. `Generated from Cron` is derived from "
+        "`match_generation_version IN ('v1', 'v2')`. A separate bulk-assign split is not shown yet because the "
+        "warehouse schema does not document a stable bulk-assign flag."
+    )
 
     audit_lookup = audit_df.drop_duplicates("segment").set_index("segment") if not audit_df.empty else pd.DataFrame()
     active_user_base = int(audit_df["active_match_users"].iloc[0]) if not audit_df.empty else 0
@@ -2463,6 +2472,8 @@ def render_location():
 
     audit_display = audit_df.copy()
     audit_display["share_of_active_users_pct"] = audit_display["share_of_active_users"] * 100
+    audit_display["xml_match_coverage_pct"] = audit_display["xml_match_coverage_rate"] * 100
+    audit_display["cron_xml_match_coverage_pct"] = audit_display["cron_xml_match_coverage_rate"] * 100
     audit_display["coverage_risk"] = audit_display["segment"].map(
         {
             "No City Listed, But State Listed": "High",
@@ -2501,12 +2512,26 @@ def render_location():
         }
     ).fillna("Current location setup is primarily contextual rather than a gap signal.")
     audit_table = audit_display[
-        ["segment", "users", "share_of_active_users_pct", "coverage_risk", "why_it_matters"]
+        [
+            "segment",
+            "users",
+            "share_of_active_users_pct",
+            "users_with_xml_match",
+            "xml_match_coverage_pct",
+            "users_with_cron_xml_match",
+            "cron_xml_match_coverage_pct",
+            "coverage_risk",
+            "why_it_matters",
+        ]
     ].rename(
         columns={
             "segment": "Audit Segment",
             "users": "Users",
             "share_of_active_users_pct": "% of Active Match Users",
+            "users_with_xml_match": "Users with XML Match",
+            "xml_match_coverage_pct": "XML Match Coverage %",
+            "users_with_cron_xml_match": "Users with Cron-Generated XML Match",
+            "cron_xml_match_coverage_pct": "Cron-Generated XML Coverage %",
             "coverage_risk": "Coverage Risk",
             "why_it_matters": "Why It Matters",
         }
@@ -2518,9 +2543,13 @@ def render_location():
             {
                 "Users": "{:,.0f}",
                 "% of Active Match Users": "{:.1f}%",
+                "Users with XML Match": "{:,.0f}",
+                "XML Match Coverage %": "{:.1f}%",
+                "Users with Cron-Generated XML Match": "{:,.0f}",
+                "Cron-Generated XML Coverage %": "{:.1f}%",
             },
-            percent_columns=["% of Active Match Users"],
-            emphasis_columns=["Users"],
+            percent_columns=["% of Active Match Users", "XML Match Coverage %", "Cron-Generated XML Coverage %"],
+            emphasis_columns=["Users", "Users with XML Match", "Users with Cron-Generated XML Match"],
             custom_style_columns={"Coverage Risk": coverage_risk_style},
         ),
         use_container_width=True,
