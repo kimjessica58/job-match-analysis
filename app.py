@@ -30,20 +30,30 @@ def check_auth():
             """
             <style>
                 [data-testid="stAppViewContainer"] { background-color: #F7F4EC; }
-                .login-box { max-width: 420px; margin: 15vh auto; padding: 40px;
-                    background: #FFFDF8; border: 1px solid #D8D1C6; border-radius: 16px;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-align: center; }
-                .login-box h2 { color: #2A231C; margin-bottom: 8px; }
-                .login-box p { color: #8A6137; font-size: 0.9rem; margin-bottom: 24px; }
+                [data-testid="stSidebar"] { display: none; }
+                [data-testid="stHeader"] { background-color: #F7F4EC; }
             </style>
-            <div class="login-box">
-                <h2>Job Match Analysis</h2>
-                <p>Sign in with your @bandana.com Google account</p>
-            </div>
             """,
             unsafe_allow_html=True,
         )
-        st.button("Sign in with Google", on_click=st.login, use_container_width=True)
+        # Center the login card using columns
+        _, center, _ = st.columns([1, 1.2, 1])
+        with center:
+            st.markdown("<div style='height: 18vh'></div>", unsafe_allow_html=True)
+            st.markdown(
+                """
+                <div style="background: #FFFDF8; border: 1px solid #D8D1C6; border-radius: 16px;
+                    box-shadow: 0 2px 12px rgba(0,0,0,0.06); padding: 48px 40px 32px; text-align: center;">
+                    <h2 style="color: #2A231C; margin: 0 0 8px; font-size: 1.6rem;">Job Match Analysis</h2>
+                    <p style="color: #8A6137; font-size: 0.9rem; margin: 0 0 28px;">
+                        Sign in with your <strong>@bandana.com</strong> Google account
+                    </p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.markdown("<div style='height: 8px'></div>", unsafe_allow_html=True)
+            st.button("Sign in with Google", on_click=st.login, use_container_width=True)
         return False
 
     email = st.user.get("email", "")
