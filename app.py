@@ -12,6 +12,52 @@ import config
 
 st.set_page_config(page_title="Job Match Analysis", page_icon="📊", layout="wide")
 
+# ── Authentication ────────────────────────────────────────────────────────────
+
+
+def check_password():
+    """Return True if the user has entered a correct password."""
+    if st.session_state.get("authenticated"):
+        return True
+
+    # Try to load passwords from Streamlit secrets, fall back to env/no-auth
+    try:
+        passwords = st.secrets["passwords"]
+    except (KeyError, FileNotFoundError):
+        # No passwords configured — allow access (local dev)
+        return True
+
+    st.markdown(
+        """
+        <style>
+            [data-testid="stAppViewContainer"] { background-color: #F7F4EC; }
+            .login-box { max-width: 400px; margin: 15vh auto; padding: 40px;
+                background: #FFFDF8; border: 1px solid #D8D1C6; border-radius: 16px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-align: center; }
+            .login-box h2 { color: #2A231C; margin-bottom: 8px; }
+            .login-box p { color: #8A6137; font-size: 0.9rem; margin-bottom: 24px; }
+        </style>
+        <div class="login-box">
+            <h2>Job Match Analysis</h2>
+            <p>Enter your password to continue</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    password = st.text_input("Password", type="password", key="password_input")
+    if st.button("Sign in", use_container_width=True):
+        if password in passwords.values():
+            st.session_state["authenticated"] = True
+            st.rerun()
+        else:
+            st.error("Incorrect password")
+    return False
+
+
+if not check_password():
+    st.stop()
+
 # ── Theme ─────────────────────────────────────────────────────────────────────
 
 COLORS = {
