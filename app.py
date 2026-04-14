@@ -53,7 +53,8 @@ def check_auth():
                 unsafe_allow_html=True,
             )
             st.markdown("<div style='height: 8px'></div>", unsafe_allow_html=True)
-            st.button("Sign in with Google", on_click=st.login, use_container_width=True)
+            if st.button("Sign in with Google", use_container_width=True):
+                st.login()
         return False
 
     email = st.user.get("email", "")
