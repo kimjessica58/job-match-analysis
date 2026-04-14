@@ -901,6 +901,170 @@ def get_remote_preference_stats(start_date=None, end_date=None):
     return run_query(sql)
 
 
+def get_location_preference_coverage_audit():
+    """Audit how current active match users express location preferences."""
+    sql = f"""
+    WITH {_latest_settings_snapshot_cte()},
+    {_latest_active_settings_cte()},
+    location_flags AS (
+        SELECT
+            s.user_id,
+            COALESCE(ARRAY_LENGTH(s.target_locations), 0) > 0 AS has_target_locations,
+            EXISTS(
+                SELECT 1
+                FROM UNNEST(s.target_locations) AS loc
+                WHERE NULLIF(TRIM(loc.city), '') IS NOT NULL
+            ) AS has_city_listed,
+            EXISTS(
+                SELECT 1
+                FROM UNNEST(s.target_locations) AS loc
+                WHERE NULLIF(TRIM(loc.state), '') IS NOT NULL
+            ) AS has_state_listed,
+            EXISTS(
+                SELECT 1
+                FROM UNNEST(s.target_locations) AS loc
+                WHERE NULLIF(TRIM(loc.state), '') IS NOT NULL
+                  AND NULLIF(TRIM(loc.city), '') IS NULL
+            ) AS has_state_without_city_entry,
+            COALESCE(s.open_to_any_city, FALSE) AS open_to_any_city,
+            COALESCE(s.open_to_remote, FALSE) AS open_to_remote,
+            COALESCE(s.open_to_hybrid, FALSE) AS open_to_hybrid,
+            COALESCE(ARRAY_LENGTH(s.target_boroughs), 0) > 0 AS has_target_boroughs,
+            COALESCE(ARRAY_LENGTH(s.raw_notion_locations), 0) > 0 AS has_raw_notion_locations
+        FROM latest_active_settings s
+    )
+    SELECT
+        1 AS sort_order,
+        'No City Listed, But State Listed' AS segment,
+        COUNTIF(NOT has_city_listed AND has_state_listed) AS users,
+        COUNT(*) AS active_match_users,
+        SAFE_DIVIDE(COUNTIF(NOT has_city_listed AND has_state_listed), COUNT(*)) AS share_of_active_users
+    FROM location_flags
+    UNION ALL
+    SELECT
+        2,
+        'Has State-Only Target Location Entry',
+        COUNTIF(has_state_without_city_entry),
+        COUNT(*),
+        SAFE_DIVIDE(COUNTIF(has_state_without_city_entry), COUNT(*))
+    FROM location_flags
+    UNION ALL
+    SELECT
+        3,
+        'Open to Any City',
+        COUNTIF(open_to_any_city),
+        COUNT(*),
+        SAFE_DIVIDE(COUNTIF(open_to_any_city), COUNT(*))
+    FROM location_flags
+    UNION ALL
+    SELECT
+        4,
+        'Open to Any City + No Listed City',
+        COUNTIF(open_to_any_city AND NOT has_city_listed),
+        COUNT(*),
+        SAFE_DIVIDE(COUNTIF(open_to_any_city AND NOT has_city_listed), COUNT(*))
+    FROM location_flags
+    UNION ALL
+    SELECT
+        5,
+        'Open to Any City + Listed City',
+        COUNTIF(open_to_any_city AND has_city_listed),
+        COUNT(*),
+        SAFE_DIVIDE(COUNTIF(open_to_any_city AND has_city_listed), COUNT(*))
+    FROM location_flags
+    UNION ALL
+    SELECT
+        6,
+        'Open to Remote',
+        COUNTIF(open_to_remote),
+        COUNT(*),
+        SAFE_DIVIDE(COUNTIF(open_to_remote), COUNT(*))
+    FROM location_flags
+    UNION ALL
+    SELECT
+        7,
+        'Open to Remote + No Listed City',
+        COUNTIF(open_to_remote AND NOT has_city_listed),
+        COUNT(*),
+        SAFE_DIVIDE(COUNTIF(open_to_remote AND NOT has_city_listed), COUNT(*))
+    FROM location_flags
+    UNION ALL
+    SELECT
+        8,
+        'Open to Remote + Listed City',
+        COUNTIF(open_to_remote AND has_city_listed),
+        COUNT(*),
+        SAFE_DIVIDE(COUNTIF(open_to_remote AND has_city_listed), COUNT(*))
+    FROM location_flags
+    UNION ALL
+    SELECT
+        9,
+        'Open to Hybrid',
+        COUNTIF(open_to_hybrid),
+        COUNT(*),
+        SAFE_DIVIDE(COUNTIF(open_to_hybrid), COUNT(*))
+    FROM location_flags
+    UNION ALL
+    SELECT
+        10,
+        'Open to Hybrid + No Listed City',
+        COUNTIF(open_to_hybrid AND NOT has_city_listed),
+        COUNT(*),
+        SAFE_DIVIDE(COUNTIF(open_to_hybrid AND NOT has_city_listed), COUNT(*))
+    FROM location_flags
+    UNION ALL
+    SELECT
+        11,
+        'No Listed City + Not Any City + Not Remote',
+        COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote),
+        COUNT(*),
+        SAFE_DIVIDE(COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote), COUNT(*))
+    FROM location_flags
+    UNION ALL
+    SELECT
+        12,
+        'No Target Locations Listed',
+        COUNTIF(NOT has_target_locations),
+        COUNT(*),
+        SAFE_DIVIDE(COUNTIF(NOT has_target_locations), COUNT(*))
+    FROM location_flags
+    UNION ALL
+    SELECT
+        13,
+        'No Target Locations + Not Any City + Not Remote',
+        COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote),
+        COUNT(*),
+        SAFE_DIVIDE(COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote), COUNT(*))
+    FROM location_flags
+    UNION ALL
+    SELECT
+        14,
+        'Target Boroughs + No Listed City',
+        COUNTIF(has_target_boroughs AND NOT has_city_listed),
+        COUNT(*),
+        SAFE_DIVIDE(COUNTIF(has_target_boroughs AND NOT has_city_listed), COUNT(*))
+    FROM location_flags
+    UNION ALL
+    SELECT
+        15,
+        'Raw Notion Locations + No Listed City',
+        COUNTIF(has_raw_notion_locations AND NOT has_city_listed),
+        COUNT(*),
+        SAFE_DIVIDE(COUNTIF(has_raw_notion_locations AND NOT has_city_listed), COUNT(*))
+    FROM location_flags
+    UNION ALL
+    SELECT
+        16,
+        'Has Listed City',
+        COUNTIF(has_city_listed),
+        COUNT(*),
+        SAFE_DIVIDE(COUNTIF(has_city_listed), COUNT(*))
+    FROM location_flags
+    ORDER BY sort_order
+    """
+    return run_query(sql)
+
+
 def get_target_location_performance(limit=50, start_date=None, end_date=None, match_source="all"):
     """Get target location funnel performance by user cohort."""
     settings_full = get_full_table("user_job_match_settings")

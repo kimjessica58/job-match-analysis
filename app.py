@@ -903,6 +903,21 @@ def gap_stage_style(value):
     return f"background-color: {color}; color: {COLORS['text']}; font-weight: 700;"
 
 
+def coverage_risk_style(value):
+    """Style qualitative coverage-risk labels with solid brand colors."""
+    palette = {
+        "High": COLORS["danger_soft"],
+        "Medium": COLORS["warning_soft"],
+        "Fallback": COLORS["info_soft"],
+        "Legacy": COLORS["brown_soft"],
+        "Context": COLORS["neutral_soft"],
+    }
+    color = palette.get(value)
+    if not color:
+        return ""
+    return f"background-color: {color}; color: {COLORS['text']}; font-weight: 700;"
+
+
 def low_coverage_row_style(row, coverage_column, threshold):
     """Highlight an entire row when coverage is below a threshold."""
     coverage_value = row.get(coverage_column)
@@ -1239,6 +1254,34 @@ def build_location_summary(location_df, combo_df, comparison_df=None, match_sour
         f"**{format_currency_delta(current_rollup.get('realized_cpa', 0) - previous_rollup.get('realized_cpa', 0))}**."
     )
     return "\n".join(summary_parts)
+
+
+def build_location_preference_audit_summary(audit_df):
+    """Summarize where current active users may be underserved by location settings."""
+    if audit_df.empty:
+        return "No location preference coverage audit data is available."
+
+    audit_lookup = audit_df.drop_duplicates("segment").set_index("segment")
+
+    def get_metric(segment):
+        if segment not in audit_lookup.index:
+            return 0, 0
+        row = audit_lookup.loc[segment]
+        return int(row.get("users", 0)), row.get("share_of_active_users", 0) or 0
+
+    state_only_users, state_only_share = get_metric("No City Listed, But State Listed")
+    any_city_users, any_city_share = get_metric("Open to Any City + No Listed City")
+    remote_users, remote_share = get_metric("Open to Remote + No Listed City")
+    no_fallback_users, no_fallback_share = get_metric("No Listed City + Not Any City + Not Remote")
+    no_locations_users, no_locations_share = get_metric("No Target Locations + Not Any City + Not Remote")
+
+    return "\n".join(
+        [
+            f"**{state_only_users:,}** active match users (**{format_pct(state_only_share)}**) have at least one target state but no target city listed anywhere in their latest settings snapshot.",
+            f"**{any_city_users:,}** (**{format_pct(any_city_share)}**) rely on **open_to_any_city** without a listed city, and **{remote_users:,}** (**{format_pct(remote_share)}**) rely on **open_to_remote** without a listed city.",
+            f"Highest-risk gap: **{no_fallback_users:,}** (**{format_pct(no_fallback_share)}**) have no listed city and no **open_to_any_city** or **open_to_remote** fallback. Within that group, **{no_locations_users:,}** (**{format_pct(no_locations_share)}**) have no structured **target_locations** at all.",
+        ]
+    )
 
 
 def build_user_cohort_page_summary(engagement_df, signup_df, comparison_df=None):
@@ -2279,6 +2322,14 @@ def render_location():
             "from the latest active match-user snapshot per <code>user_id</code>. These cards do not use the date window.",
         ),
         (
+            "Location Preference Coverage Audit",
+            "<code>user_job_match_settings.target_locations.city</code>, <code>.state</code>, "
+            "<code>open_to_any_city</code>, <code>open_to_remote</code>, <code>open_to_hybrid</code>, "
+            "<code>target_boroughs</code>, and <code>raw_notion_locations</code> from the latest active match-user "
+            "snapshot per <code>user_id</code>. Every metric is deduped at the user level and uses the full current "
+            "active match-user base as the denominator. This section does not use the match created_at window.",
+        ),
+        (
             "Top Target Locations",
             "<code>user_job_match_settings.target_locations.city</code> + <code>.state</code>, joined at the user-settings level to "
             "<code>user_job_match_auto_apply_posting_match</code> through "
@@ -2308,6 +2359,10 @@ def render_location():
         return bq_client.get_remote_preference_stats(start_date, end_date)
 
     @st.cache_data(ttl=config.CACHE_TTL)
+    def _location_pref_audit():
+        return bq_client.get_location_preference_coverage_audit()
+
+    @st.cache_data(ttl=config.CACHE_TTL)
     def _location_perf(start_date, end_date, match_source):
         return bq_client.get_target_location_performance(
             limit=5000,
@@ -2334,6 +2389,7 @@ def render_location():
 
     try:
         remote_df = _remote(start_date, end_date)
+        audit_df = _location_pref_audit()
         location_df = _location_perf(start_date, end_date, match_source)
         combo_df = _location_role_perf(start_date, end_date, match_source)
         comparison_location_df = _location_perf(compare_start, compare_end, match_source) if location_filters["compare_enabled"] else None
@@ -2380,6 +2436,98 @@ def render_location():
     c1, c2, c3, c4 = st.columns(4)
     for i, row in remote_df.iterrows():
         [c1, c2, c3, c4][i % 4].metric(pretty_label(row["preference"]), f"{int(row['count']):,}")
+
+    st.markdown("---")
+    st.subheader("Location Preference Coverage Audit")
+    render_summary_card(build_location_preference_audit_summary(audit_df))
+    st.caption(
+        "This audit is user-level and uses the current active match-user snapshot only. "
+        "`No City Listed, But State Listed` means the user has no target city anywhere in `target_locations`, "
+        "but does have at least one target state."
+    )
+
+    audit_lookup = audit_df.drop_duplicates("segment").set_index("segment") if not audit_df.empty else pd.DataFrame()
+    active_user_base = int(audit_df["active_match_users"].iloc[0]) if not audit_df.empty else 0
+
+    def _audit_metric(segment):
+        if audit_df.empty or segment not in audit_lookup.index:
+            return "0 / 0 (0.0%)"
+        row = audit_lookup.loc[segment]
+        return f"{int(row['users']):,} / {int(row['active_match_users']):,} ({format_pct(row['share_of_active_users'])})"
+
+    audit_metric_cols = st.columns(4)
+    audit_metric_cols[0].metric("No City, But State Listed", _audit_metric("No City Listed, But State Listed"))
+    audit_metric_cols[1].metric("Any City + No Listed City", _audit_metric("Open to Any City + No Listed City"))
+    audit_metric_cols[2].metric("Remote + No Listed City", _audit_metric("Open to Remote + No Listed City"))
+    audit_metric_cols[3].metric("No City + No Broad Fallback", _audit_metric("No Listed City + Not Any City + Not Remote"))
+
+    audit_display = audit_df.copy()
+    audit_display["share_of_active_users_pct"] = audit_display["share_of_active_users"] * 100
+    audit_display["coverage_risk"] = audit_display["segment"].map(
+        {
+            "No City Listed, But State Listed": "High",
+            "Open to Any City + No Listed City": "High",
+            "Open to Remote + No Listed City": "High",
+            "No Listed City + Not Any City + Not Remote": "High",
+            "No Target Locations + Not Any City + Not Remote": "High",
+            "Has State-Only Target Location Entry": "Medium",
+            "Open to Hybrid + No Listed City": "Medium",
+            "No Target Locations Listed": "Medium",
+            "Open to Any City": "Fallback",
+            "Open to Remote": "Fallback",
+            "Open to Hybrid": "Fallback",
+            "Target Boroughs + No Listed City": "Legacy",
+            "Raw Notion Locations + No Listed City": "Legacy",
+        }
+    ).fillna("Context")
+    audit_display["why_it_matters"] = audit_display["segment"].map(
+        {
+            "No City Listed, But State Listed": "State signal exists, but city-level targeting still has no explicit city anchor.",
+            "Has State-Only Target Location Entry": "At least one target location record is missing a city, even if the user also lists cities elsewhere.",
+            "Open to Any City": "Broadens eligibility beyond listed locations, but depends on how matching logic consumes the fallback.",
+            "Open to Any City + No Listed City": "This fallback may be the only location signal if no structured city target exists.",
+            "Open to Any City + Listed City": "User has both a specific city anchor and a broad any-city fallback.",
+            "Open to Remote": "Remote broadens supply; the split below shows whether a city anchor also exists.",
+            "Open to Remote + No Listed City": "Remote is the only clear location fallback if no city is listed.",
+            "Open to Remote + Listed City": "User has both a city-specific path and a remote fallback.",
+            "Open to Hybrid": "Hybrid can widen supply but does not replace explicit city targeting.",
+            "Open to Hybrid + No Listed City": "Hybrid alone may not compensate for a missing city anchor.",
+            "No Listed City + Not Any City + Not Remote": "Highest-risk gap: no explicit city and no broad fallback for location-based matching.",
+            "No Target Locations Listed": "No structured target_locations entries exist in the latest active settings snapshot.",
+            "No Target Locations + Not Any City + Not Remote": "Most likely to be underserved because neither structured locations nor broad fallback exists.",
+            "Target Boroughs + No Listed City": "Legacy borough data may help NYC targeting, but it is weaker than explicit city targeting.",
+            "Raw Notion Locations + No Listed City": "Legacy imported location data exists, but structured city targeting is still missing.",
+            "Has Listed City": "User has at least one explicit city in target_locations.",
+        }
+    ).fillna("Current location setup is primarily contextual rather than a gap signal.")
+    audit_table = audit_display[
+        ["segment", "users", "share_of_active_users_pct", "coverage_risk", "why_it_matters"]
+    ].rename(
+        columns={
+            "segment": "Audit Segment",
+            "users": "Users",
+            "share_of_active_users_pct": "% of Active Match Users",
+            "coverage_risk": "Coverage Risk",
+            "why_it_matters": "Why It Matters",
+        }
+    )
+    audit_table_height = min(900, 42 + (len(audit_table) + 1) * 35)
+    st.dataframe(
+        build_table_styler(
+            audit_table,
+            {
+                "Users": "{:,.0f}",
+                "% of Active Match Users": "{:.1f}%",
+            },
+            percent_columns=["% of Active Match Users"],
+            emphasis_columns=["Users"],
+            custom_style_columns={"Coverage Risk": coverage_risk_style},
+        ),
+        use_container_width=True,
+        hide_index=True,
+        height=audit_table_height,
+    )
+    st.caption(f"All percentages in this audit use the same current active-user denominator: {active_user_base:,} active match users.")
 
     st.markdown("---")
     st.subheader("Top 50 Target Locations (By Number of Active Match Users)")
