@@ -2330,7 +2330,10 @@ def render_location():
             "active match-user base as the denominator. The XML coverage columns use "
             "<code>user_job_match_auto_apply_posting_match.created_at</code> filtered through the XML join path "
             "(<code>user_job_match_auto_apply_posting.xml_raw_job_uuid</code> or <code>job_postings.xml_job_uuid</code>). "
-            "Generated-from-cron XML coverage is derived from <code>match_generation_version IN ('v1', 'v2')</code>.",
+            "Generated-from-cron XML coverage is derived from <code>match_generation_version IN ('v1', 'v2')</code>. "
+            "Bulk-assigned XML coverage is modeled to match the sample export's <code>Source = BULK_ASSIGN</code> pattern: "
+            "XML-backed matches with non-null <code>creator_id</code> and <code>match_generation_version</code> outside "
+            "<code>instant</code>, <code>v1</code>, and <code>v2</code>.",
         ),
         (
             "Top Target Locations",
@@ -2451,8 +2454,9 @@ def render_location():
     st.caption(
         f"XML coverage columns below use XML matches with `user_job_match_auto_apply_posting_match.created_at` "
         f"between `{start_date}` and `{end_date}`. `Generated from Cron` is derived from "
-        "`match_generation_version IN ('v1', 'v2')`. A separate bulk-assign split is not shown yet because the "
-        "warehouse schema does not document a stable bulk-assign flag."
+        "`match_generation_version IN ('v1', 'v2')`. `Bulk Assigned` is modeled as XML-backed matches with a "
+        "non-null `creator_id` and `match_generation_version` outside `instant`, `v1`, and `v2`, aligned to the "
+        "4/10-4/12 sample export where `Source = BULK_ASSIGN`."
     )
 
     audit_lookup = audit_df.drop_duplicates("segment").set_index("segment") if not audit_df.empty else pd.DataFrame()
@@ -2474,6 +2478,7 @@ def render_location():
     audit_display["share_of_active_users_pct"] = audit_display["share_of_active_users"] * 100
     audit_display["xml_match_coverage_pct"] = audit_display["xml_match_coverage_rate"] * 100
     audit_display["cron_xml_match_coverage_pct"] = audit_display["cron_xml_match_coverage_rate"] * 100
+    audit_display["bulk_assign_xml_match_coverage_pct"] = audit_display["bulk_assign_xml_match_coverage_rate"] * 100
     audit_display["coverage_risk"] = audit_display["segment"].map(
         {
             "No City Listed, But State Listed": "High",
@@ -2520,6 +2525,8 @@ def render_location():
             "xml_match_coverage_pct",
             "users_with_cron_xml_match",
             "cron_xml_match_coverage_pct",
+            "users_with_bulk_assign_xml_match",
+            "bulk_assign_xml_match_coverage_pct",
             "coverage_risk",
             "why_it_matters",
         ]
@@ -2532,6 +2539,8 @@ def render_location():
             "xml_match_coverage_pct": "XML Match Coverage %",
             "users_with_cron_xml_match": "Users with Cron-Generated XML Match",
             "cron_xml_match_coverage_pct": "Cron-Generated XML Coverage %",
+            "users_with_bulk_assign_xml_match": "Users with Bulk-Assigned XML Match",
+            "bulk_assign_xml_match_coverage_pct": "Bulk-Assigned XML Coverage %",
             "coverage_risk": "Coverage Risk",
             "why_it_matters": "Why It Matters",
         }
@@ -2547,9 +2556,21 @@ def render_location():
                 "XML Match Coverage %": "{:.1f}%",
                 "Users with Cron-Generated XML Match": "{:,.0f}",
                 "Cron-Generated XML Coverage %": "{:.1f}%",
+                "Users with Bulk-Assigned XML Match": "{:,.0f}",
+                "Bulk-Assigned XML Coverage %": "{:.1f}%",
             },
-            percent_columns=["% of Active Match Users", "XML Match Coverage %", "Cron-Generated XML Coverage %"],
-            emphasis_columns=["Users", "Users with XML Match", "Users with Cron-Generated XML Match"],
+            percent_columns=[
+                "% of Active Match Users",
+                "XML Match Coverage %",
+                "Cron-Generated XML Coverage %",
+                "Bulk-Assigned XML Coverage %",
+            ],
+            emphasis_columns=[
+                "Users",
+                "Users with XML Match",
+                "Users with Cron-Generated XML Match",
+                "Users with Bulk-Assigned XML Match",
+            ],
             custom_style_columns={"Coverage Risk": coverage_risk_style},
         ),
         use_container_width=True,

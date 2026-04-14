@@ -939,7 +939,11 @@ def get_location_preference_coverage_audit(start_date=None, end_date=None):
         SELECT
             s.user_id,
             COUNT(*) > 0 AS has_xml_match,
-            COUNTIF(IFNULL(m.match_generation_version, '') IN ('v1', 'v2')) > 0 AS has_cron_xml_match
+            COUNTIF(IFNULL(m.match_generation_version, '') IN ('v1', 'v2')) > 0 AS has_cron_xml_match,
+            COUNTIF(
+                NULLIF(TRIM(CAST(m.creator_id AS STRING)), '') IS NOT NULL
+                AND IFNULL(m.match_generation_version, '') NOT IN ('instant', 'v1', 'v2')
+            ) > 0 AS has_bulk_assign_xml_match
         FROM xml_matches m
         JOIN `{settings_full}` s
           ON m.user_job_match_settings_uuid = s.uuid
@@ -950,7 +954,8 @@ def get_location_preference_coverage_audit(start_date=None, end_date=None):
         SELECT
             lf.*,
             COALESCE(x.has_xml_match, FALSE) AS has_xml_match,
-            COALESCE(x.has_cron_xml_match, FALSE) AS has_cron_xml_match
+            COALESCE(x.has_cron_xml_match, FALSE) AS has_cron_xml_match,
+            COALESCE(x.has_bulk_assign_xml_match, FALSE) AS has_bulk_assign_xml_match
         FROM location_flags lf
         LEFT JOIN xml_match_users x
           ON lf.user_id = x.user_id
@@ -964,7 +969,9 @@ def get_location_preference_coverage_audit(start_date=None, end_date=None):
         COUNTIF(NOT has_city_listed AND has_state_listed AND has_xml_match) AS users_with_xml_match,
         SAFE_DIVIDE(COUNTIF(NOT has_city_listed AND has_state_listed AND has_xml_match), COUNTIF(NOT has_city_listed AND has_state_listed)) AS xml_match_coverage_rate,
         COUNTIF(NOT has_city_listed AND has_state_listed AND has_cron_xml_match) AS users_with_cron_xml_match,
-        SAFE_DIVIDE(COUNTIF(NOT has_city_listed AND has_state_listed AND has_cron_xml_match), COUNTIF(NOT has_city_listed AND has_state_listed)) AS cron_xml_match_coverage_rate
+        SAFE_DIVIDE(COUNTIF(NOT has_city_listed AND has_state_listed AND has_cron_xml_match), COUNTIF(NOT has_city_listed AND has_state_listed)) AS cron_xml_match_coverage_rate,
+        COUNTIF(NOT has_city_listed AND has_state_listed AND has_bulk_assign_xml_match) AS users_with_bulk_assign_xml_match,
+        SAFE_DIVIDE(COUNTIF(NOT has_city_listed AND has_state_listed AND has_bulk_assign_xml_match), COUNTIF(NOT has_city_listed AND has_state_listed)) AS bulk_assign_xml_match_coverage_rate
     FROM audit_base
     UNION ALL
     SELECT
@@ -976,7 +983,9 @@ def get_location_preference_coverage_audit(start_date=None, end_date=None):
         COUNTIF(has_state_without_city_entry AND has_xml_match),
         SAFE_DIVIDE(COUNTIF(has_state_without_city_entry AND has_xml_match), COUNTIF(has_state_without_city_entry)),
         COUNTIF(has_state_without_city_entry AND has_cron_xml_match),
-        SAFE_DIVIDE(COUNTIF(has_state_without_city_entry AND has_cron_xml_match), COUNTIF(has_state_without_city_entry))
+        SAFE_DIVIDE(COUNTIF(has_state_without_city_entry AND has_cron_xml_match), COUNTIF(has_state_without_city_entry)),
+        COUNTIF(has_state_without_city_entry AND has_bulk_assign_xml_match),
+        SAFE_DIVIDE(COUNTIF(has_state_without_city_entry AND has_bulk_assign_xml_match), COUNTIF(has_state_without_city_entry))
     FROM audit_base
     UNION ALL
     SELECT
@@ -988,7 +997,9 @@ def get_location_preference_coverage_audit(start_date=None, end_date=None):
         COUNTIF(open_to_any_city AND has_xml_match),
         SAFE_DIVIDE(COUNTIF(open_to_any_city AND has_xml_match), COUNTIF(open_to_any_city)),
         COUNTIF(open_to_any_city AND has_cron_xml_match),
-        SAFE_DIVIDE(COUNTIF(open_to_any_city AND has_cron_xml_match), COUNTIF(open_to_any_city))
+        SAFE_DIVIDE(COUNTIF(open_to_any_city AND has_cron_xml_match), COUNTIF(open_to_any_city)),
+        COUNTIF(open_to_any_city AND has_bulk_assign_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_any_city AND has_bulk_assign_xml_match), COUNTIF(open_to_any_city))
     FROM audit_base
     UNION ALL
     SELECT
@@ -1000,7 +1011,9 @@ def get_location_preference_coverage_audit(start_date=None, end_date=None):
         COUNTIF(open_to_any_city AND NOT has_city_listed AND has_xml_match),
         SAFE_DIVIDE(COUNTIF(open_to_any_city AND NOT has_city_listed AND has_xml_match), COUNTIF(open_to_any_city AND NOT has_city_listed)),
         COUNTIF(open_to_any_city AND NOT has_city_listed AND has_cron_xml_match),
-        SAFE_DIVIDE(COUNTIF(open_to_any_city AND NOT has_city_listed AND has_cron_xml_match), COUNTIF(open_to_any_city AND NOT has_city_listed))
+        SAFE_DIVIDE(COUNTIF(open_to_any_city AND NOT has_city_listed AND has_cron_xml_match), COUNTIF(open_to_any_city AND NOT has_city_listed)),
+        COUNTIF(open_to_any_city AND NOT has_city_listed AND has_bulk_assign_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_any_city AND NOT has_city_listed AND has_bulk_assign_xml_match), COUNTIF(open_to_any_city AND NOT has_city_listed))
     FROM audit_base
     UNION ALL
     SELECT
@@ -1012,7 +1025,9 @@ def get_location_preference_coverage_audit(start_date=None, end_date=None):
         COUNTIF(open_to_any_city AND has_city_listed AND has_xml_match),
         SAFE_DIVIDE(COUNTIF(open_to_any_city AND has_city_listed AND has_xml_match), COUNTIF(open_to_any_city AND has_city_listed)),
         COUNTIF(open_to_any_city AND has_city_listed AND has_cron_xml_match),
-        SAFE_DIVIDE(COUNTIF(open_to_any_city AND has_city_listed AND has_cron_xml_match), COUNTIF(open_to_any_city AND has_city_listed))
+        SAFE_DIVIDE(COUNTIF(open_to_any_city AND has_city_listed AND has_cron_xml_match), COUNTIF(open_to_any_city AND has_city_listed)),
+        COUNTIF(open_to_any_city AND has_city_listed AND has_bulk_assign_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_any_city AND has_city_listed AND has_bulk_assign_xml_match), COUNTIF(open_to_any_city AND has_city_listed))
     FROM audit_base
     UNION ALL
     SELECT
@@ -1024,7 +1039,9 @@ def get_location_preference_coverage_audit(start_date=None, end_date=None):
         COUNTIF(open_to_remote AND has_xml_match),
         SAFE_DIVIDE(COUNTIF(open_to_remote AND has_xml_match), COUNTIF(open_to_remote)),
         COUNTIF(open_to_remote AND has_cron_xml_match),
-        SAFE_DIVIDE(COUNTIF(open_to_remote AND has_cron_xml_match), COUNTIF(open_to_remote))
+        SAFE_DIVIDE(COUNTIF(open_to_remote AND has_cron_xml_match), COUNTIF(open_to_remote)),
+        COUNTIF(open_to_remote AND has_bulk_assign_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_remote AND has_bulk_assign_xml_match), COUNTIF(open_to_remote))
     FROM audit_base
     UNION ALL
     SELECT
@@ -1036,7 +1053,9 @@ def get_location_preference_coverage_audit(start_date=None, end_date=None):
         COUNTIF(open_to_remote AND NOT has_city_listed AND has_xml_match),
         SAFE_DIVIDE(COUNTIF(open_to_remote AND NOT has_city_listed AND has_xml_match), COUNTIF(open_to_remote AND NOT has_city_listed)),
         COUNTIF(open_to_remote AND NOT has_city_listed AND has_cron_xml_match),
-        SAFE_DIVIDE(COUNTIF(open_to_remote AND NOT has_city_listed AND has_cron_xml_match), COUNTIF(open_to_remote AND NOT has_city_listed))
+        SAFE_DIVIDE(COUNTIF(open_to_remote AND NOT has_city_listed AND has_cron_xml_match), COUNTIF(open_to_remote AND NOT has_city_listed)),
+        COUNTIF(open_to_remote AND NOT has_city_listed AND has_bulk_assign_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_remote AND NOT has_city_listed AND has_bulk_assign_xml_match), COUNTIF(open_to_remote AND NOT has_city_listed))
     FROM audit_base
     UNION ALL
     SELECT
@@ -1048,7 +1067,9 @@ def get_location_preference_coverage_audit(start_date=None, end_date=None):
         COUNTIF(open_to_remote AND has_city_listed AND has_xml_match),
         SAFE_DIVIDE(COUNTIF(open_to_remote AND has_city_listed AND has_xml_match), COUNTIF(open_to_remote AND has_city_listed)),
         COUNTIF(open_to_remote AND has_city_listed AND has_cron_xml_match),
-        SAFE_DIVIDE(COUNTIF(open_to_remote AND has_city_listed AND has_cron_xml_match), COUNTIF(open_to_remote AND has_city_listed))
+        SAFE_DIVIDE(COUNTIF(open_to_remote AND has_city_listed AND has_cron_xml_match), COUNTIF(open_to_remote AND has_city_listed)),
+        COUNTIF(open_to_remote AND has_city_listed AND has_bulk_assign_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_remote AND has_city_listed AND has_bulk_assign_xml_match), COUNTIF(open_to_remote AND has_city_listed))
     FROM audit_base
     UNION ALL
     SELECT
@@ -1060,7 +1081,9 @@ def get_location_preference_coverage_audit(start_date=None, end_date=None):
         COUNTIF(open_to_hybrid AND has_xml_match),
         SAFE_DIVIDE(COUNTIF(open_to_hybrid AND has_xml_match), COUNTIF(open_to_hybrid)),
         COUNTIF(open_to_hybrid AND has_cron_xml_match),
-        SAFE_DIVIDE(COUNTIF(open_to_hybrid AND has_cron_xml_match), COUNTIF(open_to_hybrid))
+        SAFE_DIVIDE(COUNTIF(open_to_hybrid AND has_cron_xml_match), COUNTIF(open_to_hybrid)),
+        COUNTIF(open_to_hybrid AND has_bulk_assign_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_hybrid AND has_bulk_assign_xml_match), COUNTIF(open_to_hybrid))
     FROM audit_base
     UNION ALL
     SELECT
@@ -1072,7 +1095,9 @@ def get_location_preference_coverage_audit(start_date=None, end_date=None):
         COUNTIF(open_to_hybrid AND NOT has_city_listed AND has_xml_match),
         SAFE_DIVIDE(COUNTIF(open_to_hybrid AND NOT has_city_listed AND has_xml_match), COUNTIF(open_to_hybrid AND NOT has_city_listed)),
         COUNTIF(open_to_hybrid AND NOT has_city_listed AND has_cron_xml_match),
-        SAFE_DIVIDE(COUNTIF(open_to_hybrid AND NOT has_city_listed AND has_cron_xml_match), COUNTIF(open_to_hybrid AND NOT has_city_listed))
+        SAFE_DIVIDE(COUNTIF(open_to_hybrid AND NOT has_city_listed AND has_cron_xml_match), COUNTIF(open_to_hybrid AND NOT has_city_listed)),
+        COUNTIF(open_to_hybrid AND NOT has_city_listed AND has_bulk_assign_xml_match),
+        SAFE_DIVIDE(COUNTIF(open_to_hybrid AND NOT has_city_listed AND has_bulk_assign_xml_match), COUNTIF(open_to_hybrid AND NOT has_city_listed))
     FROM audit_base
     UNION ALL
     SELECT
@@ -1084,7 +1109,9 @@ def get_location_preference_coverage_audit(start_date=None, end_date=None):
         COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote AND has_xml_match),
         SAFE_DIVIDE(COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote AND has_xml_match), COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote)),
         COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote AND has_cron_xml_match),
-        SAFE_DIVIDE(COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote AND has_cron_xml_match), COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote))
+        SAFE_DIVIDE(COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote AND has_cron_xml_match), COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote)),
+        COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote AND has_bulk_assign_xml_match),
+        SAFE_DIVIDE(COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote AND has_bulk_assign_xml_match), COUNTIF(NOT has_city_listed AND NOT open_to_any_city AND NOT open_to_remote))
     FROM audit_base
     UNION ALL
     SELECT
@@ -1096,7 +1123,9 @@ def get_location_preference_coverage_audit(start_date=None, end_date=None):
         COUNTIF(NOT has_target_locations AND has_xml_match),
         SAFE_DIVIDE(COUNTIF(NOT has_target_locations AND has_xml_match), COUNTIF(NOT has_target_locations)),
         COUNTIF(NOT has_target_locations AND has_cron_xml_match),
-        SAFE_DIVIDE(COUNTIF(NOT has_target_locations AND has_cron_xml_match), COUNTIF(NOT has_target_locations))
+        SAFE_DIVIDE(COUNTIF(NOT has_target_locations AND has_cron_xml_match), COUNTIF(NOT has_target_locations)),
+        COUNTIF(NOT has_target_locations AND has_bulk_assign_xml_match),
+        SAFE_DIVIDE(COUNTIF(NOT has_target_locations AND has_bulk_assign_xml_match), COUNTIF(NOT has_target_locations))
     FROM audit_base
     UNION ALL
     SELECT
@@ -1108,7 +1137,9 @@ def get_location_preference_coverage_audit(start_date=None, end_date=None):
         COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote AND has_xml_match),
         SAFE_DIVIDE(COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote AND has_xml_match), COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote)),
         COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote AND has_cron_xml_match),
-        SAFE_DIVIDE(COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote AND has_cron_xml_match), COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote))
+        SAFE_DIVIDE(COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote AND has_cron_xml_match), COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote)),
+        COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote AND has_bulk_assign_xml_match),
+        SAFE_DIVIDE(COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote AND has_bulk_assign_xml_match), COUNTIF(NOT has_target_locations AND NOT open_to_any_city AND NOT open_to_remote))
     FROM audit_base
     UNION ALL
     SELECT
@@ -1120,7 +1151,9 @@ def get_location_preference_coverage_audit(start_date=None, end_date=None):
         COUNTIF(has_target_boroughs AND NOT has_city_listed AND has_xml_match),
         SAFE_DIVIDE(COUNTIF(has_target_boroughs AND NOT has_city_listed AND has_xml_match), COUNTIF(has_target_boroughs AND NOT has_city_listed)),
         COUNTIF(has_target_boroughs AND NOT has_city_listed AND has_cron_xml_match),
-        SAFE_DIVIDE(COUNTIF(has_target_boroughs AND NOT has_city_listed AND has_cron_xml_match), COUNTIF(has_target_boroughs AND NOT has_city_listed))
+        SAFE_DIVIDE(COUNTIF(has_target_boroughs AND NOT has_city_listed AND has_cron_xml_match), COUNTIF(has_target_boroughs AND NOT has_city_listed)),
+        COUNTIF(has_target_boroughs AND NOT has_city_listed AND has_bulk_assign_xml_match),
+        SAFE_DIVIDE(COUNTIF(has_target_boroughs AND NOT has_city_listed AND has_bulk_assign_xml_match), COUNTIF(has_target_boroughs AND NOT has_city_listed))
     FROM audit_base
     UNION ALL
     SELECT
@@ -1132,7 +1165,9 @@ def get_location_preference_coverage_audit(start_date=None, end_date=None):
         COUNTIF(has_raw_notion_locations AND NOT has_city_listed AND has_xml_match),
         SAFE_DIVIDE(COUNTIF(has_raw_notion_locations AND NOT has_city_listed AND has_xml_match), COUNTIF(has_raw_notion_locations AND NOT has_city_listed)),
         COUNTIF(has_raw_notion_locations AND NOT has_city_listed AND has_cron_xml_match),
-        SAFE_DIVIDE(COUNTIF(has_raw_notion_locations AND NOT has_city_listed AND has_cron_xml_match), COUNTIF(has_raw_notion_locations AND NOT has_city_listed))
+        SAFE_DIVIDE(COUNTIF(has_raw_notion_locations AND NOT has_city_listed AND has_cron_xml_match), COUNTIF(has_raw_notion_locations AND NOT has_city_listed)),
+        COUNTIF(has_raw_notion_locations AND NOT has_city_listed AND has_bulk_assign_xml_match),
+        SAFE_DIVIDE(COUNTIF(has_raw_notion_locations AND NOT has_city_listed AND has_bulk_assign_xml_match), COUNTIF(has_raw_notion_locations AND NOT has_city_listed))
     FROM audit_base
     UNION ALL
     SELECT
@@ -1144,7 +1179,9 @@ def get_location_preference_coverage_audit(start_date=None, end_date=None):
         COUNTIF(has_city_listed AND has_xml_match),
         SAFE_DIVIDE(COUNTIF(has_city_listed AND has_xml_match), COUNTIF(has_city_listed)),
         COUNTIF(has_city_listed AND has_cron_xml_match),
-        SAFE_DIVIDE(COUNTIF(has_city_listed AND has_cron_xml_match), COUNTIF(has_city_listed))
+        SAFE_DIVIDE(COUNTIF(has_city_listed AND has_cron_xml_match), COUNTIF(has_city_listed)),
+        COUNTIF(has_city_listed AND has_bulk_assign_xml_match),
+        SAFE_DIVIDE(COUNTIF(has_city_listed AND has_bulk_assign_xml_match), COUNTIF(has_city_listed))
     FROM audit_base
     ORDER BY sort_order
     """
