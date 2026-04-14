@@ -2873,6 +2873,11 @@ def render_role_industry():
             "<code>user_job_match_auto_apply_posting_match.created_at</code>; revenue uses <code>.cpa</code>.",
         ),
         (
+            "No Target Alias Selected",
+            "Counts current active match users in the latest settings snapshot whose <code>target_roles_ref</code> array contains "
+            "no non-null <code>alias</code> values. This is a current snapshot metric and does not use the match created_at window.",
+        ),
+        (
             "Role x Geography Funnel Coverage",
             "Same lineage as the role table plus <code>user_job_match_settings.target_locations.city</code> + <code>.state</code>. "
             "This remains a user-preference cohort view: it does not yet force the matched posting itself to share the same role-location pair.",
@@ -2909,11 +2914,16 @@ def render_role_industry():
     def _certs(start_date, end_date):
         return bq_client.get_certification_distribution(start_date=start_date, end_date=end_date)
 
+    @st.cache_data(ttl=config.CACHE_TTL)
+    def _role_alias_summary():
+        return bq_client.get_role_alias_selection_summary()
+
     try:
         ind_df = _industries(start_date, end_date)
         role_df = _roles(start_date, end_date, match_source)
         combo_df = _role_geo(start_date, end_date, match_source)
         cert_df = _certs(start_date, end_date)
+        role_alias_summary = _role_alias_summary().iloc[0]
         comparison_role_df = _roles(compare_start, compare_end, match_source) if role_filters["compare_enabled"] else None
         comparison_combo_df = _role_geo(compare_start, compare_end, match_source) if role_filters["compare_enabled"] else None
     except Exception as e:
@@ -2928,28 +2938,32 @@ def render_role_industry():
 
     rollup = build_location_rollup(role_df)
     comparison_rollup = build_location_rollup(comparison_role_df) if comparison_role_df is not None else {}
-    metric_cols = st.columns(5)
+    metric_cols = st.columns(6)
     metric_cols[0].metric(
         "User-Role Pairs",
         f"{rollup.get('user_location_pairs', 0):,}",
         None if not comparison_rollup else f"{rollup.get('user_location_pairs', 0) - comparison_rollup.get('user_location_pairs', 0):+,}",
     )
     metric_cols[1].metric(
+        "No Target Alias Selected",
+        f"{int(role_alias_summary.get('users_without_target_role_alias', 0)):,} / {int(role_alias_summary.get('active_match_users', 0)):,} ({format_pct(role_alias_summary.get('users_without_target_role_alias_rate'))})",
+    )
+    metric_cols[2].metric(
         "Weighted Match Coverage",
         format_pct(rollup.get("match_rate")),
         None if not comparison_rollup else format_delta_points(rollup.get("match_rate"), comparison_rollup.get("match_rate")),
     )
-    metric_cols[2].metric(
+    metric_cols[3].metric(
         "Approval After Match",
         format_pct(rollup.get("approval_rate")),
         None if not comparison_rollup else format_delta_points(rollup.get("approval_rate"), comparison_rollup.get("approval_rate")),
     )
-    metric_cols[3].metric(
+    metric_cols[4].metric(
         "Application After Approval",
         format_pct(rollup.get("application_rate")),
         None if not comparison_rollup else format_delta_points(rollup.get("application_rate"), comparison_rollup.get("application_rate")),
     )
-    metric_cols[4].metric(
+    metric_cols[5].metric(
         "Realized CPA",
         format_currency(rollup.get("realized_cpa")),
         None if not comparison_rollup else format_currency_delta(rollup.get("realized_cpa", 0) - comparison_rollup.get("realized_cpa", 0)),

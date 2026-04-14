@@ -1208,6 +1208,29 @@ def get_role_distribution(limit=30, start_date=None, end_date=None):
     return run_query(sql)
 
 
+def get_role_alias_selection_summary():
+    """Get current active-user counts with and without a target role alias selected."""
+    sql = f"""
+    WITH {_latest_settings_snapshot_cte()},
+    {_latest_active_settings_cte()},
+    role_alias_presence AS (
+        SELECT
+            s.user_id,
+            COUNTIF(r.alias IS NOT NULL AND TRIM(r.alias) != '') AS alias_count
+        FROM latest_active_settings s
+        LEFT JOIN UNNEST(s.target_roles_ref) AS r
+        GROUP BY s.user_id
+    )
+    SELECT
+        COUNT(*) AS active_match_users,
+        COUNTIF(alias_count > 0) AS users_with_target_role_alias,
+        COUNTIF(alias_count = 0) AS users_without_target_role_alias,
+        SAFE_DIVIDE(COUNTIF(alias_count = 0), COUNT(*)) AS users_without_target_role_alias_rate
+    FROM role_alias_presence
+    """
+    return run_query(sql)
+
+
 def get_certification_distribution(limit=20, start_date=None, end_date=None):
     """Get top certification counts."""
     sql = f"""
